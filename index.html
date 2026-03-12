@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#030812"/>
+<title>MFSignal — Secure Access</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ─────────────────────────────────────────
+   HOW TO USE THIS IN YOUR index.html:
+   1. Copy everything inside #lockScreen div
+   2. Paste it at the very TOP of your body
+   3. Copy the <style> block and add to your CSS
+   4. Copy the <script> block and add to your JS
+   5. Change PASSPHRASE to your secret word
+   ───────────────────────────────────────── */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#030812;--s1:#080f1e;--s2:#0c1528;
+  --b1:#162030;--b2:#1e2e44;
+  --t1:#f0f6ff;--t2:#7a9abe;--t3:#3a5270;
+  --green:#00d68f;--gd:#00d68f15;--gb:#001810;
+  --amber:#f5a623;--red:#ff5c5c;
+  --blue:#4db8ff;
+}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1)}
+
+/* ── ANIMATED BG ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 20%,#00d68f0a,transparent 65%),
+    radial-gradient(ellipse 60% 40% at 85% 75%,#4db8ff08,transparent 65%),
+    radial-gradient(ellipse 50% 60% at 50% 50%,#0c152808,transparent 70%);
+  animation:bgPulse 8s ease-in-out infinite alternate;
+  pointer-events:none;z-index:0
+}
+@keyframes bgPulse{from{opacity:.6}to{opacity:1}}
+
+/* ── GRID ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);
+  background-size:48px 48px;opacity:.12;pointer-events:none;z-index:0
+}
+
+/* ══════════════════════════════════════
+   LOCK SCREEN
+══════════════════════════════════════ */
+#lockScreen{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+
+.lock-card{
+  position:relative;z-index:1;
+  width:100%;max-width:420px;
+  background:linear-gradient(145deg,#0c1528,#080f1e);
+  border:1px solid var(--b2);border-radius:24px;
+  padding:44px 40px 40px;
+  box-shadow:0 30px 80px #00000066,0 0 60px #00d68f0a;
+  animation:cardIn .6s cubic-bezier(.175,.885,.32,1.275)
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+
+/* glowing border top */
+.lock-card::before{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--blue),transparent);
+  border-radius:1px
+}
+
+/* logo */
+.lock-logo{
+  width:64px;height:64px;border-radius:16px;margin:0 auto 24px;
+  background:linear-gradient(135deg,#00d68f,#00a86b);
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+  box-shadow:0 8px 32px #00d68f44;
+  animation:logoFloat 3s ease-in-out infinite
+}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+.lock-title{
+  font-size:26px;font-weight:800;text-align:center;margin-bottom:6px;
+  background:linear-gradient(135deg,#f0f6ff,#7a9abe);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.02em
+}
+.lock-subtitle{font-size:12px;color:var(--t3);text-align:center;margin-bottom:32px;letter-spacing:.04em;text-transform:uppercase}
+
+/* ── INPUT GROUP ── */
+.input-group{position:relative;margin-bottom:16px}
+.input-label{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
+.pass-input{
+  width:100%;padding:14px 48px 14px 16px;
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  color:var(--t1);font-size:15px;font-family:'JetBrains Mono',monospace;
+  letter-spacing:.15em;outline:none;
+  transition:border-color .2s,box-shadow .2s
+}
+.pass-input::placeholder{letter-spacing:.05em;font-family:'Outfit',sans-serif;font-size:13px;color:var(--t3)}
+.pass-input:focus{border-color:var(--green)66;box-shadow:0 0 0 3px var(--green)11}
+.pass-input.error{border-color:var(--red)66;box-shadow:0 0 0 3px var(--red)11;animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.eye-btn{
+  position:absolute;right:14px;bottom:14px;
+  background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;
+  transition:color .2s;line-height:1
+}
+.eye-btn:hover{color:var(--t2)}
+
+/* ── UNLOCK BUTTON ── */
+.unlock-btn{
+  width:100%;padding:15px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--green),#00a86b);
+  color:#001810;font-size:15px;font-weight:800;letter-spacing:.04em;
+  cursor:pointer;margin-top:8px;
+  transition:all .2s;position:relative;overflow:hidden
+}
+.unlock-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,#ffffff22,transparent);
+  opacity:0;transition:opacity .2s
+}
+.unlock-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px #00d68f44}
+.unlock-btn:hover::after{opacity:1}
+.unlock-btn:active{transform:translateY(0)}
+.unlock-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* ── ERROR MSG ── */
+.error-msg{
+  display:none;align-items:center;gap:6px;
+  background:#ff5c5c11;border:1px solid #ff5c5c33;border-radius:8px;
+  padding:10px 12px;font-size:12px;color:var(--red);margin-top:8px
+}
+.error-msg.show{display:flex}
+
+/* ── ATTEMPTS ── */
+.attempts-bar{
+  display:flex;gap:6px;justify-content:center;margin-top:20px
+}
+.attempt-dot{width:8px;height:8px;border-radius:50%;background:var(--b2);transition:background .3s}
+.attempt-dot.used{background:var(--red)}
+
+/* ── FOOTER ── */
+.lock-footer{margin-top:28px;text-align:center;font-size:11px;color:var(--t3);line-height:1.6}
+.lock-footer strong{color:var(--t2)}
+
+/* ── REMEMBER BADGE ── */
+.remember-row{display:flex;align-items:center;gap:10px;margin-top:16px}
+.remember-lbl{font-size:12px;color:var(--t3);flex:1}
+.toggle-wrap{position:relative;width:38px;height:20px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--b2);border-radius:20px;cursor:pointer;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-wrap input:checked+.toggle-track{background:var(--green)}
+.toggle-wrap input:checked+.toggle-track::after{transform:translateX(18px)}
+
+/* ── LOCKED/UNLOCK STATE ── */
+#lockScreen.unlocking .lock-card{animation:unlockPop .5s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes unlockPop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.04)}100%{transform:scale(.95);opacity:0}}
+#lockScreen.gone{display:none!important}
+
+/* ── COOLDOWN ── */
+.cooldown-msg{
+  display:none;text-align:center;padding:20px 0 0;font-size:13px;color:var(--amber)
+}
+.cooldown-msg.show{display:block}
+.cooldown-timer{font-size:24px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--red);display:block;margin-top:4px}
+
+
+/* ══════════════════════════════════════
+   MAIN APP (hidden until unlocked)
+══════════════════════════════════════ */
+#mainApp{
+  display:none;position:relative;z-index:1;
+  padding:40px 20px;max-width:900px;margin:0 auto
+}
+#mainApp.visible{display:block;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.app-demo{
+  background:linear-gradient(135deg,#0c1528,#080f1e);
+  border:1px solid var(--b2);border-radius:20px;padding:32px;
+  text-align:center
+}
+.app-demo h2{font-size:28px;font-weight:800;margin-bottom:12px;
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.app-demo p{color:var(--t2);font-size:14px;line-height:1.7;margin-bottom:20px}
+.lock-again-btn{padding:10px 20px;border-radius:8px;border:1px solid var(--b2);background:var(--s1);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.lock-again-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* ══════════════════════════════════════
+   ROADMAP SECTION
+══════════════════════════════════════ */
+.roadmap{padding:20px 0}
+.roadmap-title{font-size:22px;font-weight:800;margin-bottom:6px;
+  background:linear-gradient(135deg,var(--amber),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.roadmap-sub{font-size:12px;color:var(--t3);margin-bottom:24px;letter-spacing:.04em;text-transform:uppercase}
+
+.version-block{margin-bottom:32px}
+.version-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;border:1px solid
+}
+.v-current{background:#00d68f15;color:var(--green);border-color:var(--green)44}
+.v-next{background:#f5a62315;color:var(--amber);border-color:var(--amber)44}
+.v-future{background:#4db8ff15;color:var(--blue);border-color:var(--blue)44}
+.v-vision{background:#a78bfa15;color:#a78bfa;border-color:#a78bfa44}
+
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.feat-card{
+  background:linear-gradient(135deg,#0c1528,#080f1e);
+  border:1px solid var(--b1);border-radius:12px;padding:14px 16px;
+  display:flex;gap:12px;align-items:flex-start;
+  transition:border-color .2s,transform .2s
+}
+.feat-card:hover{border-color:var(--b2);transform:translateY(-2px)}
+.feat-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.feat-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px}
+.feat-desc{font-size:11px;color:var(--t3);line-height:1.5}
+.feat-badge{display:inline-block;margin-top:5px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em}
+.badge-live{background:var(--gd);color:var(--green)}
+.badge-soon{background:#f5a62315;color:var(--amber)}
+.badge-planned{background:#4db8ff15;color:var(--blue)}
+.badge-idea{background:#a78bfa15;color:#a78bfa}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     🔐 LOCK SCREEN
+     Change PASSPHRASE below to your secret word
+══════════════════════════════════════════ -->
+<div id="lockScreen">
+  <div class="lock-card">
+
+    <div class="lock-logo">📡</div>
+    <div class="lock-title">MFSignal</div>
+    <div class="lock-subtitle">Live MF Intelligence · Private Access</div>
+
+    <div class="input-group">
+      <label class="input-label" for="passInput">Passphrase</label>
+      <input
+        class="pass-input" id="passInput" type="password"
+        placeholder="Enter your passphrase..."
+        onkeydown="if(event.key==='Enter')tryUnlock()"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+      />
+      <button class="eye-btn" id="eyeBtn" onclick="toggleEye()" title="Show/hide">👁</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg">
+      <span>⚠</span><span id="errorText">Incorrect passphrase. Try again.</span>
+    </div>
+
+    <div class="attempts-bar" id="attemptsDots">
+      <div class="attempt-dot" id="d1"></div>
+      <div class="attempt-dot" id="d2"></div>
+      <div class="attempt-dot" id="d3"></div>
+      <div class="attempt-dot" id="d4"></div>
+      <div class="attempt-dot" id="d5"></div>
+    </div>
+
+    <div class="cooldown-msg" id="cooldownMsg">
+      Too many attempts. Try again in
+      <span class="cooldown-timer" id="cooldownTimer">30</span>
+    </div>
+
+    <button class="unlock-btn" id="unlockBtn" onclick="tryUnlock()">
+      🔓 Unlock Dashboard
+    </button>
+
+    <div class="remember-row">
+      <span class="remember-lbl">Remember me on this device</span>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="rememberToggle" checked/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+
+    <div class="lock-footer">
+      <strong>MFSignal v2.0</strong> · Private portfolio intelligence<br/>
+      Not investment advice · AMFI official data
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP — replace this div with your full
+     mf_signal_platform.html body content
+══════════════════════════════════════════ -->
+<div id="mainApp">
+  <div class="app-demo">
+    <h2>✅ Access Granted</h2>
+    <p>You are now inside the MFSignal dashboard.<br/>
+    Replace this section with your full dashboard HTML.</p>
+    <button class="lock-again-btn" onclick="lockOut()">🔒 Lock Again</button>
+  </div>
+
+  <div class="roadmap">
+    <div class="roadmap-title">MFSignal — Feature Roadmap</div>
+    <div class="roadmap-sub">What's live · What's coming · What's planned</div>
+
+    <!-- V1 Current -->
+    <div class="version-block">
+      <div class="version-tag v-current">✅ v1.0 — Current (Live Now)</div>
+      <div class="features-grid">
+        <div class="feat-card"><div class="feat-icon">📡</div><div><div class="feat-name">Live NAV Estimation</div><div class="feat-desc">Weighted index model using Nifty50, S&P500, Midcap150, Smallcap250 to estimate NAV before AMFI declares it at 9 PM</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🎯</div><div><div class="feat-name">1 Best Signal Per Month</div><div class="feat-desc">Fund-adaptive strategy picks the single highest-confidence entry day each month using RSI, Bollinger Bands, Monthly Low</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📊</div><div><div class="feat-name">NAV Chart (Daily + Monthly)</div><div class="feat-desc">Candlestick-style view with MA, BB bands, signal triangles. Toggle between daily and monthly aggregation</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📈</div><div><div class="feat-name">Backtest + Alpha vs Nifty</div><div class="feat-desc">Full trade log, CAGR, Sharpe ratio, win rate, cumulative alpha chart vs Nifty 50 benchmark</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🔔</div><div><div class="feat-name">Real-time Buy Alerts</div><div class="feat-desc">Toast notifications + alert panel when BUY signal triggers. Browser push notifications opt-in</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">💼</div><div><div class="feat-name">Portfolio Impact View</div><div class="feat-desc">See exactly which holding is dragging or lifting your NAV today with per-stock impact in ₹ and %</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📱</div><div><div class="feat-name">Mobile Responsive</div><div class="feat-desc">Full bottom nav, touch-friendly, PWA-ready. Works on iPhone, Android, any screen size</div><span class="feat-badge badge-live">LIVE</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🔐</div><div><div class="feat-name">Passphrase Protection</div><div class="feat-desc">Client-side passphrase lock screen with remember-me, cooldown, and 5-attempt limit</div><span class="feat-badge badge-live">LIVE</span></div></div>
+      </div>
+    </div>
+
+    <!-- V2 Next -->
+    <div class="version-block">
+      <div class="version-tag v-next">🚧 v2.0 — Coming Next</div>
+      <div class="features-grid">
+        <div class="feat-card"><div class="feat-icon">📲</div><div><div class="feat-name">WhatsApp / Telegram Alerts</div><div class="feat-desc">Send BUY signal alerts directly to your WhatsApp or Telegram via free bot integration (Telegram Bot API)</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">💰</div><div><div class="feat-name">SIP Optimizer</div><div class="feat-desc">Enter your SIP date and amount. App tells you if this month's signal is before or after your SIP and whether to prepone</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🏦</div><div><div class="feat-name">Add Any Fund</div><div class="feat-desc">Search and add any Indian mutual fund by name. Auto-detect strategy based on fund category</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📉</div><div><div class="feat-name">Drawdown Alerts</div><div class="feat-desc">Alert when any fund falls more than X% from its ATH — customizable threshold per fund</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🌙</div><div><div class="feat-name">Light / Dark Mode Toggle</div><div class="feat-desc">Switch between dark trading terminal and clean light mode. Syncs with system preference</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📅</div><div><div class="feat-name">Signal Calendar View</div><div class="feat-desc">Full month calendar showing signal strength for every day. Color-coded green/amber/red grid</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📊</div><div><div class="feat-name">Multi-Fund Comparison</div><div class="feat-desc">Compare all 3 funds side-by-side: NAV growth, alpha, signal frequency, best entry months</div><span class="feat-badge badge-soon">SOON</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🤖</div><div><div class="feat-name">AI Signal Explanation</div><div class="feat-desc">One-tap "Why should I buy today?" — Claude AI explains the signal in plain language tailored to your fund</div><span class="feat-badge badge-soon">SOON</span></div></div>
+      </div>
+    </div>
+
+    <!-- V3 Planned -->
+    <div class="version-block">
+      <div class="version-tag v-future">🔭 v3.0 — Planned</div>
+      <div class="features-grid">
+        <div class="feat-card"><div class="feat-icon">📱</div><div><div class="feat-name">Install as PWA App</div><div class="feat-desc">One-tap "Add to Home Screen" — works like a native app on iPhone and Android, offline capable</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🎯</div><div><div class="feat-name">Goal-Based Tracking</div><div class="feat-desc">Set investment goals (e.g. ₹50L in 10 years) and track progress. Signal adapts to your time horizon</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📧</div><div><div class="feat-name">Daily Email Digest</div><div class="feat-desc">Morning email at 8 AM with today's signal, estimated NAV direction, and market overview for your funds</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🗂️</div><div><div class="feat-name">Portfolio Manager</div><div class="feat-desc">Enter your actual units held per fund. Dashboard shows real P&L, XIRR, and value in ₹ at live estimated NAV</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📰</div><div><div class="feat-name">News Impact Analyzer</div><div class="feat-desc">Fetch relevant financial news (RBI policy, budget, global events) and estimate NAV impact in real time</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🔄</div><div><div class="feat-name">Auto SIP Reminder</div><div class="feat-desc">WhatsApp reminder 2 days before your SIP date if the signal is strong — so you can top up manually</div><span class="feat-badge badge-planned">PLANNED</span></div></div>
+      </div>
+    </div>
+
+    <!-- Vision -->
+    <div class="version-block">
+      <div class="version-tag v-vision">💡 Vision — Long Term</div>
+      <div class="features-grid">
+        <div class="feat-card"><div class="feat-icon">🧠</div><div><div class="feat-name">ML Signal Engine</div><div class="feat-desc">Train a model on 10 years of NAV data to predict optimal entry days with confidence scores</div><span class="feat-badge badge-idea">IDEA</span></div></div>
+        <div class="feat-card"><div class="feat-icon">👥</div><div><div class="feat-name">Family Portfolios</div><div class="feat-desc">Manage multiple family members' portfolios from one dashboard with separate logins and alerts</div><span class="feat-badge badge-idea">IDEA</span></div></div>
+        <div class="feat-card"><div class="feat-icon">🌐</div><div><div class="feat-name">All Indian MFs</div><div class="feat-desc">Expand to all 2000+ AMFI-listed funds with auto-strategy assignment by category</div><span class="feat-badge badge-idea">IDEA</span></div></div>
+        <div class="feat-card"><div class="feat-icon">📊</div><div><div class="feat-name">Tax Harvesting Alerts</div><div class="feat-desc">Alert when long-term capital gains harvesting window opens based on your purchase dates and current NAV</div><span class="feat-badge badge-idea">IDEA</span></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PASSPHRASE LOCK SCRIPT
+     ⚙️ CONFIGURE HERE:
+══════════════════════════════════════════ -->
+<script>
+// ╔══════════════════════════════════╗
+// ║  CONFIGURE YOUR PASSPHRASE HERE  ║
+// ╚══════════════════════════════════╝
+const PASSPHRASE = 'mfsignal2024';   // ← Change this to your secret word
+const MAX_ATTEMPTS = 5;              // ← Lock out after N wrong tries
+const COOLDOWN_SECONDS = 30;         // ← Lockout duration in seconds
+const STORAGE_KEY = 'mfsignal_auth'; // ← localStorage key (don't share)
+
+// ─────────────────────────────────────
+let attempts = 0;
+let coolingDown = false;
+let coolTimer = null;
+
+// Check if already authenticated
+window.addEventListener('DOMContentLoaded', () => {
+  const remember = document.getElementById('rememberToggle').checked;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved === 'true') {
+    unlock(false); // silent unlock, no animation
+  }
+});
+
+function tryUnlock() {
+  if (coolingDown) return;
+  const input = document.getElementById('passInput');
+  const val = input.value.trim();
+
+  if (!val) { shakeInput(); return; }
+
+  if (val === PASSPHRASE) {
+    // ✅ Correct
+    clearError();
+    if (document.getElementById('rememberToggle').checked) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+    }
+    unlock(true);
+  } else {
+    // ❌ Wrong
+    attempts++;
+    updateDots();
+    showError(`Incorrect passphrase. ${MAX_ATTEMPTS - attempts} attempt${MAX_ATTEMPTS - attempts !== 1 ? 's' : ''} remaining.`);
+    shakeInput();
+    input.value = '';
+    input.focus();
+
+    if (attempts >= MAX_ATTEMPTS) {
+      startCooldown();
+    }
+  }
+}
+
+function unlock(animate) {
+  const lock = document.getElementById('lockScreen');
+  const app = document.getElementById('mainApp');
+  if (animate) {
+    lock.classList.add('unlocking');
+    setTimeout(() => {
+      lock.classList.add('gone');
+      app.classList.add('visible');
+    }, 450);
+  } else {
+    lock.classList.add('gone');
+    app.classList.add('visible');
+  }
+}
+
+function lockOut() {
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('lockScreen').classList.remove('gone', 'unlocking');
+  document.getElementById('mainApp').classList.remove('visible');
+  attempts = 0;
+  updateDots();
+  clearError();
+  document.getElementById('passInput').value = '';
+}
+
+function startCooldown() {
+  coolingDown = true;
+  document.getElementById('unlockBtn').disabled = true;
+  document.getElementById('passInput').disabled = true;
+  document.getElementById('cooldownMsg').classList.add('show');
+  document.getElementById('errorMsg').classList.remove('show');
+
+  let secs = COOLDOWN_SECONDS;
+  document.getElementById('cooldownTimer').textContent = secs + 's';
+
+  coolTimer = setInterval(() => {
+    secs--;
+    document.getElementById('cooldownTimer').textContent = secs + 's';
+    if (secs <= 0) {
+      clearInterval(coolTimer);
+      coolingDown = false;
+      attempts = 0;
+      updateDots();
+      document.getElementById('unlockBtn').disabled = false;
+      document.getElementById('passInput').disabled = false;
+      document.getElementById('cooldownMsg').classList.remove('show');
+      document.getElementById('passInput').focus();
+    }
+  }, 1000);
+}
+
+function showError(msg) {
+  document.getElementById('errorText').textContent = msg;
+  document.getElementById('errorMsg').classList.add('show');
+}
+function clearError() {
+  document.getElementById('errorMsg').classList.remove('show');
+}
+function shakeInput() {
+  const el = document.getElementById('passInput');
+  el.classList.remove('error');
+  void el.offsetWidth; // reflow
+  el.classList.add('error');
+  setTimeout(() => el.classList.remove('error'), 500);
+}
+function updateDots() {
+  for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+    const dot = document.getElementById('d' + i);
+    if (dot) dot.classList.toggle('used', i <= attempts);
+  }
+}
+function toggleEye() {
+  const inp = document.getElementById('passInput');
+  const btn = document.getElementById('eyeBtn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+</script>
+
+</body>
+</html>
